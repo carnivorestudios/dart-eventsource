@@ -12,15 +12,15 @@ class EventSourceEncoder extends Converter<Event, List<int>> {
   const EventSourceEncoder({bool this.compressed: false});
 
   static Map<String, Function> _fields = {
-    "id: ": (e) => e.id,
-    "event: ": (e) => e.event,
-    "data: ": (e) => e.data,
+    "id: ": (Event e) => e.id,
+    "event: ": (Event e) => e.event,
+    "data: ": (Event e) => e.data,
   };
 
   @override
   List<int> convert(Event event) {
     String payload = convertToString(event);
-    List<int> bytes = UTF8.encode(payload);
+    List<int> bytes = utf8.encode(payload);
     if (compressed) {
       bytes = GZIP.encode(bytes);
     }
@@ -44,13 +44,13 @@ class EventSourceEncoder extends Converter<Event, List<int>> {
 
   @override
   Sink<Event> startChunkedConversion(Sink<List<int>> sink) {
-    Sink inputSink = sink;
+    Sink<List<int>> inputSink = sink;
     if (compressed) {
       inputSink = GZIP.encoder.startChunkedConversion(inputSink);
     }
-    inputSink = UTF8.encoder.startChunkedConversion(inputSink);
+    StringConversionSink stringSink = utf8.encoder.startChunkedConversion(inputSink);
     return new ProxySink(
-        onAdd: (Event event) => inputSink.add(convertToString(event)),
-        onClose: () => inputSink.close());
+        onAdd: (Event event) => stringSink.add(convertToString(event)),
+        onClose: () => stringSink.close());
   }
 }

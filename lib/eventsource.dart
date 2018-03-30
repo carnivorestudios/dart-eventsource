@@ -54,13 +54,13 @@ class EventSource extends Stream<Event> {
   EventSourceDecoder _decoder;
 
   /// Create a new EventSource by connecting to the specified url.
-  static Future<EventSource> connect(url,
+  static Future<EventSource> connect(dynamic url,
       {http.Client client, String lastEventId}) async {
     // parameter initialization
-    url = url is Uri ? url : Uri.parse(url);
+    Uri uri = url is Uri ? url : Uri.parse(url as String);
     client = client ?? new http.Client();
     lastEventId = lastEventId ?? "";
-    EventSource es = new EventSource._internal(url, client, lastEventId);
+    EventSource es = new EventSource._internal(uri, client, lastEventId);
     await es._start();
     return es;
   }
@@ -109,7 +109,7 @@ class EventSource extends Stream<Event> {
     // try reopening with exponential backoff
     Duration backoff = _retryDelay;
     while (true) {
-      await new Future.delayed(backoff);
+      await new Future<void>.delayed(backoff);
       try {
         await _start();
         break;
@@ -126,7 +126,7 @@ class EventSource extends Stream<Event> {
 }
 
 /// Returns the encoding to use for a response with the given headers. This
-/// defaults to [LATIN1] if the headers don't specify a charset or
+/// defaults to [latin1] if the headers don't specify a charset or
 /// if that charset is unknown.
 Encoding _encodingForHeaders(Map<String, String> headers) =>
     encodingForCharset(_contentTypeForHeaders(headers).parameters['charset']);
