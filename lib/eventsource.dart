@@ -6,6 +6,7 @@ import "dart:async";
 import "dart:convert";
 
 import "package:http/http.dart" as http;
+import 'package:http/http.dart';
 import "package:http/src/utils.dart" show encodingForCharset;
 import "package:http_parser/http_parser.dart" show MediaType;
 
@@ -77,10 +78,11 @@ class EventSource extends Stream<Event> {
     _decoder = new EventSourceDecoder(onStreamError, retryIndicator: _updateRetryDelay);
   }
 
-  static void _rethrowOnError(Object error) {
+  static FutureOr<StreamedResponse> _rethrowOnError(Object error) {
     if (error is Exception) {
       throw(error);
     }
+    return null;
   }
 
   // proxy the listen call to the controller's listen call
