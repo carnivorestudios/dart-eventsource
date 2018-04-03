@@ -42,6 +42,8 @@ class EventSource extends Stream<Event> {
   Stream<Event> get onMessage => this.where((e) => e.event == "message");
   Stream<Event> get onError => this.where((e) => e.event == "error");
 
+  String _lastEventData;
+
   // internal attributes
 
   StreamController<Event> _streamController =
@@ -107,8 +109,12 @@ class EventSource extends Stream<Event> {
     _readyState = EventSourceReadyState.OPEN;
     // start streaming the data
     response.stream.transform(_decoder).listen((Event event) {
-      _streamController.add(event);
+      if (event.data != _lastEventData) {
+        print('skipping event with duplicate data for url: $url');
+        _streamController.add(event);
+      }
       _lastEventId = event.id;
+      _lastEventData = event.data;
     },
         cancelOnError: true,
         onError: _retry,
