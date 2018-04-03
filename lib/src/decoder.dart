@@ -9,8 +9,9 @@ typedef void RetryIndicator(Duration duration);
 
 class EventSourceDecoder implements StreamTransformer<List<int>, Event> {
   RetryIndicator retryIndicator;
+  final Function onError;
 
-  EventSourceDecoder({this.retryIndicator});
+  EventSourceDecoder(this.onError, {this.retryIndicator, });
 
   Stream<Event> bind(Stream<List<int>> stream) {
     StreamController<Event> controller;
@@ -31,8 +32,13 @@ class EventSourceDecoder implements StreamTransformer<List<int>, Event> {
           // event is done
           // strip ending newline from data
           if (currentEvent.data != null) {
-            var match = removeEndingNewlineRegex.firstMatch(currentEvent.data);
-            currentEvent.data = match.group(1);
+            try {
+              var match = removeEndingNewlineRegex.firstMatch(
+                  currentEvent.data);
+              currentEvent.data = match.group(1);
+            } catch (e) {
+              print('failed to remove ending new line');
+            }
           }
           controller.add(currentEvent);
           currentEvent = new Event();
@@ -62,6 +68,9 @@ class EventSourceDecoder implements StreamTransformer<List<int>, Event> {
             }
             break;
         }
+      }).onError((Object error) {
+        onError(error);
+        controller.close();
       });
     });
     return controller.stream;

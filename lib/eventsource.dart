@@ -34,6 +34,7 @@ class EventSource extends Stream<Event> {
   // interface attributes
 
   final Uri url;
+  final Function onStreamError;
 
   EventSourceReadyState get readyState => _readyState;
 
@@ -55,18 +56,29 @@ class EventSource extends Stream<Event> {
 
   /// Create a new EventSource by connecting to the specified url.
   static Future<EventSource> connect(dynamic url,
-      {http.Client client, String lastEventId}) async {
+      {http.Client client, String lastEventId, Function onError}) async {
+    print('connect to url: $url');
     // parameter initialization
     Uri uri = url is Uri ? url : Uri.parse(url as String);
     client = client ?? new http.Client();
     lastEventId = lastEventId ?? "";
-    EventSource es = new EventSource._internal(uri, client, lastEventId);
+    EventSource es = new EventSource._internal(uri, client, lastEventId, onError);
     await es._start();
     return es;
   }
 
-  EventSource._internal(this.url, this.client, this._lastEventId) {
-    _decoder = new EventSourceDecoder(retryIndicator: _updateRetryDelay);
+  void close() {
+    client.close();
+  }
+
+  EventSource._internal(this.url, this.client, this._lastEventId, Function onError) : onStreamError = onError ?? _rethrowOnError {
+    _decoder = new EventSourceDecoder(onStreamError, retryIndicator: _updateRetryDelay);
+  }
+
+  static void _rethrowOnError(Object error) {
+    if (error is Exception) {
+      throw(error);
+    }
   }
 
   // proxy the listen call to the controller's listen call
@@ -85,7 +97,7 @@ class EventSource extends Stream<Event> {
     if (_lastEventId.isNotEmpty) {
       request.headers["Last-Event-ID"] = _lastEventId;
     }
-    var response = await client.send(request);
+    var response = await client.send(request).catchError(onStreamError);
     if (response.statusCode != 200) {
       // server returned an error
       var bodyBytes = await response.stream.toBytes();
