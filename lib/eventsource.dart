@@ -102,11 +102,15 @@ class EventSource extends Stream<Event> {
       request.headers["Last-Event-ID"] = _lastEventId;
     }
     var response = await client.send(request).catchError(onStreamError);
-    if (response.statusCode != 200) {
+    if (response?.statusCode != 200) {
       // server returned an error
-      var bodyBytes = await response.stream.toBytes();
-      String body = _encodingForHeaders(response.headers).decode(bodyBytes);
-      throw new EventSourceSubscriptionException(response.statusCode, body);
+      if (response != null) {
+        var bodyBytes = await response.stream.toBytes();
+        String body = _encodingForHeaders(response.headers).decode(bodyBytes);
+        throw new EventSourceSubscriptionException(response.statusCode, body);
+      } else {
+        throw new EventSourceSubscriptionException(-1, 'null esponse from url $url');
+      }
     }
     _readyState = EventSourceReadyState.OPEN;
     // start streaming the data
