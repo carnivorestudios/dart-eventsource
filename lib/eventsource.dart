@@ -160,6 +160,6 @@ Encoding _encodingForHeaders(Map<String, String> headers) =>
 /// Defaults to `application/octet-stream`.
 MediaType _contentTypeForHeaders(Map<String, String> headers) {
   var contentType = headers['content-type'];
-  if (contentType != null) return new MediaType.parse(contentType);
+  if (contentType.isNotEmpty) return new MediaType.parse(contentType);
   return new MediaType("application", "octet-stream");
 }
